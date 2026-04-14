@@ -1,12 +1,9 @@
 /* ============================================
-   NEXTLEARN – Script JS
-   Interactions, animations, smooth scroll
-   JavaScript Vanilla (ES6)
+   NEXTLEARN – Script JS UPGRADÉ
    ============================================ */
 
 document.addEventListener('DOMContentLoaded', () => {
 
-    // ---- Références DOM ----
     const navbar = document.getElementById('navbar');
     const navToggle = document.getElementById('navToggle');
     const navMenu = document.getElementById('navMenu');
@@ -14,33 +11,69 @@ document.addEventListener('DOMContentLoaded', () => {
     const animatedElements = document.querySelectorAll('.animate-on-scroll');
     const statNumbers = document.querySelectorAll('.stat-number');
     const notifyForm = document.getElementById('notifyForm');
+    const cursorGlow = document.getElementById('cursorGlow');
+    const scrollProgress = document.getElementById('scrollProgress');
 
-    // ---- Overlay pour le menu mobile ----
+    // Overlay mobile
     const overlay = document.createElement('div');
     overlay.classList.add('nav-overlay');
     document.body.appendChild(overlay);
 
     // ============================================
-    // NAVBAR – Comportement au scroll
+    // CURSEUR LUMINEUX
     // ============================================
-    let lastScroll = 0;
+    if (cursorGlow && window.matchMedia('(pointer: fine)').matches) {
+        let mouseX = 0, mouseY = 0;
+        let glowX = 0, glowY = 0;
 
+        document.addEventListener('mousemove', (e) => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+            cursorGlow.classList.add('active');
+        });
+
+        document.addEventListener('mouseleave', () => {
+            cursorGlow.classList.remove('active');
+        });
+
+        function animateCursor() {
+            glowX += (mouseX - glowX) * 0.08;
+            glowY += (mouseY - glowY) * 0.08;
+            cursorGlow.style.left = glowX + 'px';
+            cursorGlow.style.top = glowY + 'px';
+            requestAnimationFrame(animateCursor);
+        }
+        animateCursor();
+    }
+
+    // ============================================
+    // BARRE DE PROGRESSION SCROLL
+    // ============================================
+    if (scrollProgress) {
+        function updateScrollProgress() {
+            const scrollTop = window.scrollY;
+            const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+            const scrollPercent = (scrollTop / docHeight) * 100;
+            scrollProgress.style.width = scrollPercent + '%';
+        }
+        window.addEventListener('scroll', updateScrollProgress, { passive: true });
+        updateScrollProgress();
+    }
+
+    // ============================================
+    // NAVBAR SCROLL
+    // ============================================
     function handleNavScroll() {
-        const currentScroll = window.scrollY;
-
-        if (currentScroll > 50) {
+        if (window.scrollY > 50) {
             navbar.classList.add('scrolled');
         } else {
             navbar.classList.remove('scrolled');
         }
-
-        lastScroll = currentScroll;
     }
-
     window.addEventListener('scroll', handleNavScroll, { passive: true });
 
     // ============================================
-    // MENU MOBILE – Toggle
+    // MENU MOBILE
     // ============================================
     function toggleMobileMenu() {
         navToggle.classList.toggle('active');
@@ -58,130 +91,94 @@ document.addEventListener('DOMContentLoaded', () => {
 
     navToggle.addEventListener('click', toggleMobileMenu);
     overlay.addEventListener('click', closeMobileMenu);
-
-    // Fermer le menu quand on clique un lien
-    navLinks.forEach(link => {
-        link.addEventListener('click', () => {
-            closeMobileMenu();
-        });
-    });
+    navLinks.forEach(link => link.addEventListener('click', closeMobileMenu));
 
     // ============================================
-    // NAVIGATION ACTIVE – Surligner le lien actif en fonction du scroll
+    // NAVIGATION ACTIVE
     // ============================================
     const sections = document.querySelectorAll('section[id]');
 
     function highlightActiveNav() {
         const scrollPos = window.scrollY + 150;
-
         sections.forEach(section => {
-            const sectionTop = section.offsetTop;
-            const sectionHeight = section.offsetHeight;
-            const sectionId = section.getAttribute('id');
-
-            if (scrollPos >= sectionTop && scrollPos < sectionTop + sectionHeight) {
+            const top = section.offsetTop;
+            const height = section.offsetHeight;
+            const id = section.getAttribute('id');
+            if (scrollPos >= top && scrollPos < top + height) {
                 navLinks.forEach(link => {
                     link.classList.remove('active');
-                    if (link.getAttribute('href') === `#${sectionId}`) {
-                        link.classList.add('active');
-                    }
+                    if (link.getAttribute('href') === `#${id}`) link.classList.add('active');
                 });
             }
         });
     }
-
     window.addEventListener('scroll', highlightActiveNav, { passive: true });
 
     // ============================================
-    // ANIMATIONS AU SCROLL – Intersection Observer
+    // SCROLL REVEAL – Intersection Observer + Staggered
     // ============================================
-    const observerOptions = {
-        root: null,
-        rootMargin: '0px 0px -60px 0px',
-        threshold: 0.1
-    };
-
     const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
                 entry.target.classList.add('visible');
-                // Ne pas désactiver l'observation pour permettre de rejouer l'animation
-                // si on veut un effet "one-time", décommenter :
-                // observer.unobserve(entry.target);
             }
         });
-    }, observerOptions);
+    }, { rootMargin: '0px 0px -60px 0px', threshold: 0.1 });
 
     animatedElements.forEach(el => observer.observe(el));
 
-    // ============================================
-    // COMPTEUR ANIMÉ – Stats du hero
-    // ============================================
-    let statsAnimated = false;
+    // Staggered reveal for grids and lists
+    const staggerObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const children = entry.target.querySelectorAll('.stagger-item');
+                children.forEach((child, i) => {
+                    setTimeout(() => {
+                        child.classList.add('visible');
+                    }, i * 120);
+                });
+                staggerObserver.unobserve(entry.target);
+            }
+        });
+    }, { rootMargin: '0px 0px -40px 0px', threshold: 0.05 });
 
-    function animateCounters() {
-        if (statsAnimated) return;
+    // Auto-tag stagger items in grids
+    document.querySelectorAll('.v1-grid .v1-card, .v2-grid .v2-card, .contact-grid .contact-card').forEach(el => {
+        el.classList.add('stagger-item');
+    });
+    document.querySelectorAll('.v1-grid, .v2-grid, .contact-grid').forEach(grid => {
+        staggerObserver.observe(grid);
+    });
 
-        const statsSection = document.querySelector('.hero-stats');
-        if (!statsSection) return;
+    // Progressive reveal for all sections
+    document.querySelectorAll('.section-header, .hero-content, .about-content, .about-vision, .download-card, .founders-header, .carousel-wrapper').forEach(el => {
+        el.classList.add('progressive-reveal');
+    });
 
-        const rect = statsSection.getBoundingClientRect();
-        const windowHeight = window.innerHeight;
+    const progressiveObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('revealed');
+                progressiveObserver.unobserve(entry.target);
+            }
+        });
+    }, { rootMargin: '0px 0px -50px 0px', threshold: 0.1 });
 
-        if (rect.top < windowHeight && rect.bottom > 0) {
-            statsAnimated = true;
-
-            statNumbers.forEach(num => {
-                const target = parseInt(num.getAttribute('data-target'), 10);
-                const duration = 2000; // ms
-                const startTime = performance.now();
-
-                function updateCount(currentTime) {
-                    const elapsed = currentTime - startTime;
-                    const progress = Math.min(elapsed / duration, 1);
-
-                    // Easing function (ease-out)
-                    const eased = 1 - Math.pow(1 - progress, 3);
-                    const current = Math.floor(eased * target);
-
-                    num.textContent = current;
-
-                    if (progress < 1) {
-                        requestAnimationFrame(updateCount);
-                    } else {
-                        num.textContent = target;
-                    }
-                }
-
-                requestAnimationFrame(updateCount);
-            });
-        }
-    }
-
-    window.addEventListener('scroll', animateCounters, { passive: true });
-    // Aussi vérifier au chargement  
-    animateCounters();
+    document.querySelectorAll('.progressive-reveal').forEach(el => progressiveObserver.observe(el));
 
     // ============================================
-    // SMOOTH SCROLL – Navigation interne
+    // SMOOTH SCROLL
     // ============================================
     document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-        anchor.addEventListener('click', function (e) {
+        anchor.addEventListener('click', function(e) {
             e.preventDefault();
-
-            const targetId = this.getAttribute('href');
-            if (targetId === '#') return;
-
-            const targetEl = document.querySelector(targetId);
-            if (!targetEl) return;
-
-            const navHeight = navbar.offsetHeight;
-            const targetPosition = targetEl.getBoundingClientRect().top + window.scrollY - navHeight;
-
-            window.scrollTo({
-                top: targetPosition,
-                behavior: 'smooth'
-            });
+            const id = this.getAttribute('href');
+            if (id === '#') return;
+            const target = document.querySelector(id);
+            if (!target) return;
+            const offset = navbar.offsetHeight;
+            const pos = target.getBoundingClientRect().top + window.scrollY - offset;
+            window.scrollTo({ top: pos, behavior: 'smooth' });
         });
     });
 
@@ -191,19 +188,13 @@ document.addEventListener('DOMContentLoaded', () => {
     if (notifyForm) {
         notifyForm.addEventListener('submit', (e) => {
             e.preventDefault();
-
-            const emailInput = notifyForm.querySelector('input[type="email"]');
-            const email = emailInput.value.trim();
-
+            const email = notifyForm.querySelector('input[type="email"]').value.trim();
             if (email) {
-                // Remplacer le formulaire par un message de succès
-                const parent = notifyForm.parentElement;
                 notifyForm.style.display = 'none';
-
-                const successMsg = document.createElement('div');
-                successMsg.style.cssText = `
+                const msg = document.createElement('div');
+                msg.style.cssText = `
                     padding: 14px 20px;
-                    background: rgba(26, 73, 125, 0.08);
+                    background: rgba(26,73,125,0.08);
                     border-radius: 8px;
                     color: #1a497d;
                     font-size: 0.9rem;
@@ -211,351 +202,183 @@ document.addEventListener('DOMContentLoaded', () => {
                     display: flex;
                     align-items: center;
                     gap: 8px;
+                    animation: fadeSlideIn 0.4s ease-out;
                 `;
-                successMsg.innerHTML = '<i class="fas fa-check-circle"></i> Merci ! Vous serez notifié(e) dès la sortie iOS.';
+                msg.innerHTML = '<i class="fas fa-check-circle"></i> Merci ! Vous serez notifié(e) dès la sortie iOS.';
+                const info = notifyForm.parentElement.querySelector('.notify-info');
+                if (info) info.style.display = 'none';
+                notifyForm.parentElement.appendChild(msg);
 
-                const infoEl = parent.querySelector('.notify-info');
-                if (infoEl) infoEl.style.display = 'none';
-
-                parent.appendChild(successMsg);
+                if (!document.getElementById('fade-slide-style')) {
+                    const s = document.createElement('style');
+                    s.id = 'fade-slide-style';
+                    s.textContent = `@keyframes fadeSlideIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }`;
+                    document.head.appendChild(s);
+                }
             }
         });
     }
 
     // ============================================
-    // BOUTON RETOUR EN HAUT – Apparition
+    // DÉPLACEMENT SECTION À PROPOS APRÈS V1
     // ============================================
-    const backToTop = document.getElementById('backToTop');
-
-    if (backToTop) {
-        function toggleBackToTop() {
-            if (window.scrollY > 600) {
-                backToTop.style.opacity = '1';
-                backToTop.style.pointerEvents = 'all';
-            } else {
-                backToTop.style.opacity = '0.3';
-                backToTop.style.pointerEvents = 'all';
-            }
-        }
-
-        window.addEventListener('scroll', toggleBackToTop, { passive: true });
+    const aboutSection = document.getElementById('about');
+    const featuresV1 = document.getElementById('features-v1');
+    if (aboutSection && featuresV1) {
+        featuresV1.parentNode.insertBefore(aboutSection, featuresV1.nextSibling);
     }
 
     // ============================================
-    // PARALLAX LÉGER – Particules du hero
+    // ALERTE SPAM AVANT TÉLÉCHARGEMENT
     // ============================================
-    const particles = document.querySelectorAll('.particle');
+    function showSpamAlert(downloadUrl) {
+        const overlay = document.createElement('div');
+        overlay.className = 'ios-alert-overlay';
+        overlay.innerHTML = `
+            <div class="ios-alert-box">
+                <button class="ios-alert-close" aria-label="Fermer"><i class="fas fa-times"></i></button>
+                <div class="ios-alert-icon" style="background:rgba(255,171,0,0.12);color:#e6a200;"><i class="fas fa-exclamation-triangle"></i></div>
+                <h3 class="ios-alert-title">Vérifiez vos spams !</h3>
+                <p class="ios-alert-text">Lors de votre inscription, un <strong>e-mail de vérification</strong> vous sera envoyé. Il est possible qu'il arrive dans votre dossier <strong>Spam / Courrier indésirable</strong>. Pensez à le vérifier si vous ne le trouvez pas dans votre boîte de réception.</p>
+                <button class="ios-alert-btn">Compris, télécharger l'APK</button>
+            </div>
+        `;
+        document.body.appendChild(overlay);
 
-    function handleParallax() {
-        const scrollY = window.scrollY;
+        overlay.querySelector('.ios-alert-btn').addEventListener('click', () => {
+            overlay.remove();
+            if (downloadUrl && downloadUrl !== '#') {
+                window.location.href = downloadUrl;
+            }
+        });
 
-        particles.forEach((particle, index) => {
-            const speed = 0.02 + (index * 0.01);
-            const yOffset = scrollY * speed;
-            particle.style.transform = `translateY(${yOffset}px)`;
+        overlay.querySelector('.ios-alert-close').addEventListener('click', () => {
+            overlay.remove();
+        });
+
+        overlay.addEventListener('click', (ev) => {
+            if (ev.target === overlay) overlay.remove();
         });
     }
 
-    window.addEventListener('scroll', handleParallax, { passive: true });
+    // Hero Android download button
+    const heroAndroidBtn = document.querySelector('.hero-buttons .btn-primary');
+    if (heroAndroidBtn) {
+        heroAndroidBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            showSpamAlert(heroAndroidBtn.getAttribute('href'));
+        });
+    }
 
-    // ============================================
-    // BOUTON TÉLÉCHARGEMENT – Compteur factice
-    // ============================================
+    // Download section Android button
     const downloadBtn = document.getElementById('downloadBtn');
-
     if (downloadBtn) {
         downloadBtn.addEventListener('click', (e) => {
             e.preventDefault();
-
-            // Animation visuelle du bouton
-            downloadBtn.style.transform = 'scale(0.95)';
-            setTimeout(() => {
-                downloadBtn.style.transform = '';
-            }, 200);
-
-            // Alerte de téléchargement (à remplacer par le vrai lien)
-            const toast = document.createElement('div');
-            toast.style.cssText = `
-                position: fixed;
-                bottom: 30px;
-                right: 30px;
-                background: #1a497d;
-                color: white;
-                padding: 16px 24px;
-                border-radius: 12px;
-                font-family: 'Poppins', sans-serif;
-                font-size: 0.9rem;
-                font-weight: 500;
-                box-shadow: 0 10px 40px rgba(26, 73, 125, 0.3);
-                z-index: 9999;
-                display: flex;
-                align-items: center;
-                gap: 10px;
-                animation: slideInToast 0.4s ease-out;
-            `;
-            toast.innerHTML = '<i class="fas fa-download"></i> Téléchargement bientôt disponible !';
-
-            // Ajouter l'animation keyframe
-            if (!document.getElementById('toast-style')) {
-                const style = document.createElement('style');
-                style.id = 'toast-style';
-                style.textContent = `
-                    @keyframes slideInToast {
-                        from { transform: translateX(100px); opacity: 0; }
-                        to { transform: translateX(0); opacity: 1; }
-                    }
-                    @keyframes slideOutToast {
-                        from { transform: translateX(0); opacity: 1; }
-                        to { transform: translateX(100px); opacity: 0; }
-                    }
-                `;
-                document.head.appendChild(style);
-            }
-
-            document.body.appendChild(toast);
-
-            setTimeout(() => {
-                toast.style.animation = 'slideOutToast 0.4s ease-in forwards';
-                setTimeout(() => toast.remove(), 400);
-            }, 3000);
+            showSpamAlert('apk/nextlearn_v1_1.0_android.apk');
         });
     }
 
     // ============================================
-    // ANIMATION D'ENTRÉE INITIALE
+    // GESTION BOUTON iOS – ALERTE STYLÉE + REDIRECTION
     // ============================================
-    // Déclencher les animations du hero au chargement
-    setTimeout(() => {
-        const heroElements = document.querySelectorAll('.hero .animate-on-scroll');
-        heroElements.forEach((el, i) => {
-            setTimeout(() => {
-                el.classList.add('visible');
-            }, i * 150);
+    document.querySelectorAll('.ios-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            const overlay = document.createElement('div');
+            overlay.className = 'ios-alert-overlay';
+            overlay.innerHTML = `
+                <div class="ios-alert-box">
+                    <button class="ios-alert-close" aria-label="Fermer"><i class="fas fa-times"></i></button>
+                    <div class="ios-alert-icon"><i class="fab fa-apple"></i></div>
+                    <h3 class="ios-alert-title">Version iOS à venir !</h3>
+                    <p class="ios-alert-text">L'application iOS est en cours de développement et sera disponible prochainement. En attendant, découvrez la version web de NextLearn.</p>
+                    <button class="ios-alert-btn">Continuer vers la version Web</button>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+
+            overlay.querySelector('.ios-alert-btn').addEventListener('click', () => {
+                overlay.remove();
+                window.open('https://frontend-v1-nextlearn-mobile.vercel.app/', '_blank', 'noopener,noreferrer');
+            });
+
+            overlay.querySelector('.ios-alert-close').addEventListener('click', () => {
+                overlay.remove();
+            });
+
+            overlay.addEventListener('click', (ev) => {
+                if (ev.target === overlay) overlay.remove();
+            });
         });
-    }, 200);
+    });
 
     // ============================================
-    // ORBITAL TIMELINE – Fonctionnalités V1
+    // CARROUSEL FONDATEURS
     // ============================================
-    (function initOrbitalTimeline() {
-        const container = document.getElementById('orbitalContainer');
-        const viewport = document.getElementById('orbitalViewport');
-        const connectionsSvg = document.getElementById('orbitalConnections');
-        const nodes = document.querySelectorAll('.orbital-node');
+    const carousel = document.getElementById('foundersCarousel');
+    const slides = carousel ? carousel.querySelectorAll('.founder-slide') : [];
+    const prevBtn = document.getElementById('carouselPrev');
+    const nextBtn = document.getElementById('carouselNext');
+    const dotsContainer = document.getElementById('carouselDots');
+    const dots = dotsContainer ? dotsContainer.querySelectorAll('.carousel-dot') : [];
+    let currentSlide = 0;
+    let autoPlayInterval;
 
-        if (!container || !viewport || nodes.length === 0) return;
-
-        let rotationAngle = 0;
-        let autoRotate = true;
-        let activeNodeId = null;
-        let animFrameId = null;
-        let lastTimestamp = 0;
-
-        const ROTATION_SPEED = 0.3; // degrés par frame (~50ms)
-        const FRAME_INTERVAL = 50;
-
-        // Calculer le rayon en fonction de la taille du viewport
-        function getRadius() {
-            const vw = viewport.offsetWidth;
-            return vw * 0.4; // 40% de la largeur du viewport
-        }
-
-        // Calculer la position d'un nœud
-        function calculateNodePosition(index, total) {
-            const angle = ((index / total) * 360 + rotationAngle) % 360;
-            const radius = getRadius();
-            const radian = (angle * Math.PI) / 180;
-
-            const x = radius * Math.cos(radian);
-            const y = radius * Math.sin(radian);
-
-            const zIndex = Math.round(100 + 50 * Math.cos(radian));
-            const opacity = Math.max(0.4, Math.min(1, 0.4 + 0.6 * ((1 + Math.sin(radian)) / 2)));
-
-            return { x, y, angle, zIndex, opacity };
-        }
-
-        // Mettre à jour les positions de tous les nœuds
-        function updateNodePositions() {
-            const total = nodes.length;
-
-            nodes.forEach((node, index) => {
-                const pos = calculateNodePosition(index, total);
-                const isActive = node.classList.contains('is-active');
-
-                // Centrer le nœud : translate depuis le centre du viewport
-                node.style.transform = `translate(calc(-50% + ${pos.x}px), calc(-50% + ${pos.y}px))`;
-                node.style.zIndex = isActive ? 200 : pos.zIndex;
-                node.style.opacity = isActive ? 1 : pos.opacity;
-            });
-
-            updateConnections();
-        }
-
-        // Dessiner les connexions SVG
-        function updateConnections() {
-            if (!connectionsSvg) return;
-
-            const viewportRect = viewport.getBoundingClientRect();
-            const centerX = viewportRect.width / 2;
-            const centerY = viewportRect.height / 2;
-            const total = nodes.length;
-
-            let svgContent = '';
-
-            nodes.forEach((node, index) => {
-                const relatedStr = node.getAttribute('data-related');
-                if (!relatedStr) return;
-
-                const relatedIds = relatedStr.split(',').map(Number);
-                const pos1 = calculateNodePosition(index, total);
-
-                relatedIds.forEach(relId => {
-                    const relIndex = Array.from(nodes).findIndex(n =>
-                        parseInt(n.getAttribute('data-node-id')) === relId
-                    );
-                    if (relIndex === -1 || relIndex <= index) return; // Avoid duplicates
-
-                    const pos2 = calculateNodePosition(relIndex, total);
-
-                    const isActive =
-                        (activeNodeId && (
-                            parseInt(node.getAttribute('data-node-id')) === activeNodeId ||
-                            relId === activeNodeId
-                        ));
-
-                    svgContent += `<line 
-                        x1="${centerX + pos1.x}" y1="${centerY + pos1.y}" 
-                        x2="${centerX + pos2.x}" y2="${centerY + pos2.y}" 
-                        class="${isActive ? 'connection-active' : ''}" />`;
-                });
-            });
-
-            connectionsSvg.innerHTML = svgContent;
-        }
-
-        // Animation loop
-        function animate(timestamp) {
-            if (!autoRotate) {
-                animFrameId = requestAnimationFrame(animate);
-                return;
-            }
-
-            if (timestamp - lastTimestamp >= FRAME_INTERVAL) {
-                rotationAngle = (rotationAngle + ROTATION_SPEED) % 360;
-                updateNodePositions();
-                lastTimestamp = timestamp;
-            }
-
-            animFrameId = requestAnimationFrame(animate);
-        }
-
-        // Centrer la vue sur un nœud
-        function centerOnNode(nodeIndex) {
-            const total = nodes.length;
-            const targetAngle = (nodeIndex / total) * 360;
-            rotationAngle = 270 - targetAngle;
-            updateNodePositions();
-        }
-
-        // Obtenir les IDs liés
-        function getRelatedIds(nodeId) {
-            const node = document.querySelector(`.orbital-node[data-node-id="${nodeId}"]`);
-            if (!node) return [];
-            const relatedStr = node.getAttribute('data-related');
-            return relatedStr ? relatedStr.split(',').map(Number) : [];
-        }
-
-        // Toggle un nœud
-        function toggleNode(clickedNode) {
-            const nodeId = parseInt(clickedNode.getAttribute('data-node-id'));
-            const wasActive = clickedNode.classList.contains('is-active');
-
-            // Retirer tous les états
-            nodes.forEach(n => {
-                n.classList.remove('is-active', 'is-related');
-            });
-
-            if (wasActive) {
-                activeNodeId = null;
-                autoRotate = true;
-            } else {
-                activeNodeId = nodeId;
-                autoRotate = false;
-                clickedNode.classList.add('is-active');
-
-                // Marquer les nœuds liés
-                const relatedIds = getRelatedIds(nodeId);
-                relatedIds.forEach(relId => {
-                    const relNode = document.querySelector(`.orbital-node[data-node-id="${relId}"]`);
-                    if (relNode) relNode.classList.add('is-related');
-                });
-
-                // Centrer sur le nœud
-                const nodeIndex = Array.from(nodes).indexOf(clickedNode);
-                centerOnNode(nodeIndex);
-            }
-
-            updateConnections();
-        }
-
-        // ---- Event Listeners ----
-
-        // Clic sur un nœud
-        nodes.forEach(node => {
-            node.addEventListener('click', (e) => {
-                e.stopPropagation();
-                toggleNode(node);
-            });
+    function goToSlide(index) {
+        if (!slides.length) return;
+        currentSlide = ((index % slides.length) + slides.length) % slides.length;
+        slides.forEach((slide, i) => {
+            slide.style.transform = `translateX(-${currentSlide * 100}%)`;
         });
-
-        // Clic sur un tag lié dans la card
-        document.querySelectorAll('.related-tag').forEach(tag => {
-            tag.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const gotoId = parseInt(tag.getAttribute('data-goto'));
-                const targetNode = document.querySelector(`.orbital-node[data-node-id="${gotoId}"]`);
-                if (targetNode) {
-                    toggleNode(targetNode);
-                }
-            });
+        dots.forEach((dot, i) => {
+            dot.classList.toggle('active', i === currentSlide);
         });
+    }
 
-        // Clic sur le fond pour tout désélectionner
-        container.addEventListener('click', (e) => {
-            if (e.target === container || e.target === viewport) {
-                nodes.forEach(n => n.classList.remove('is-active', 'is-related'));
-                activeNodeId = null;
-                autoRotate = true;
-                updateConnections();
+    function nextSlide() { goToSlide(currentSlide + 1); }
+    function prevSlide() { goToSlide(currentSlide - 1); }
+
+    function startAutoPlay() {
+        stopAutoPlay();
+        autoPlayInterval = setInterval(nextSlide, 4000);
+    }
+
+    function stopAutoPlay() {
+        if (autoPlayInterval) clearInterval(autoPlayInterval);
+    }
+
+    if (prevBtn) prevBtn.addEventListener('click', () => { prevSlide(); startAutoPlay(); });
+    if (nextBtn) nextBtn.addEventListener('click', () => { nextSlide(); startAutoPlay(); });
+
+    dots.forEach(dot => {
+        dot.addEventListener('click', () => {
+            goToSlide(parseInt(dot.dataset.index));
+            startAutoPlay();
+        });
+    });
+
+    // Touch/swipe pour mobile
+    if (carousel) {
+        let touchStartX = 0;
+        let touchEndX = 0;
+
+        carousel.addEventListener('touchstart', (e) => {
+            touchStartX = e.changedTouches[0].screenX;
+            stopAutoPlay();
+        }, { passive: true });
+
+        carousel.addEventListener('touchend', (e) => {
+            touchEndX = e.changedTouches[0].screenX;
+            const diff = touchStartX - touchEndX;
+            if (Math.abs(diff) > 50) {
+                if (diff > 0) nextSlide();
+                else prevSlide();
             }
-        });
+            startAutoPlay();
+        }, { passive: true });
+    }
 
-        // Observer l'entrée en vue pour démarrer l'animation
-        const orbitalObserver = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    if (!animFrameId) {
-                        animFrameId = requestAnimationFrame(animate);
-                    }
-                } else {
-                    if (animFrameId) {
-                        cancelAnimationFrame(animFrameId);
-                        animFrameId = null;
-                    }
-                }
-            });
-        }, { threshold: 0.1 });
-
-        orbitalObserver.observe(container);
-
-        // Mise à jour initiale
-        updateNodePositions();
-
-        // Resize listener
-        window.addEventListener('resize', () => {
-            updateNodePositions();
-        });
-    })();
+    if (slides.length > 0) startAutoPlay();
 
 });
