@@ -4,6 +4,7 @@
   "outputDirectory": "dist/nextLearn-web/browser",
   "installCommand": "npm ci",
   "rewrites": [
+    { "source": "/api/:path*", "destination": "https://api-nextlearn.duckdns.org/api/:path*" },
     { "source": "/app/(.*)", "destination": "/index.html" }
   ]
 }
