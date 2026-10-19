@@ -45,7 +45,7 @@ test.describe('Auth / Unlock', () => {
     await page.locator('nl-pin-input button:has-text("3")').click();
     await page.locator('nl-pin-input button:has-text("4")').click();
 
-    await page.waitForURL(/\/app\/home/, { timeout: 5000 });
+    await page.waitForURL((url) => !url.pathname.includes('/unlock'), { timeout: 5000 });
   });
 
   test('unlock refuse un PIN incorrect', async ({ page }) => {

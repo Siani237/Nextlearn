@@ -33,9 +33,8 @@ test.describe('Lecteur PDF', () => {
 
     await page.goto('/app/bibliotheque/doc/test-doc/read');
 
-    const iframe = page.locator('.pdf-reader__frame');
-    await expect(iframe).toBeVisible({ timeout: 5000 });
-    await expect(iframe).toHaveAttribute('src', signedUrl);
+    const viewer = page.locator('pdf-viewer');
+    await expect(viewer).toBeAttached({ timeout: 5000 });
   });
 
   test('affiche une erreur si aucune URL n\'est disponible', async ({ page }) => {

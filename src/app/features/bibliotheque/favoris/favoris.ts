@@ -47,7 +47,7 @@ export class Favoris implements OnInit {
   }
 
   protected openDocument(doc: DocumentModel): void {
-    void this.router.navigate(['/', AppRoutes.documentDetail.replace(':id', doc.id)]);
+    void this.router.navigateByUrl('/app/' + AppRoutes.docDetailPath(doc.id));
   }
 
   protected async remove(doc: DocumentModel, event: Event): Promise<void> {

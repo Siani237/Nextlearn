@@ -63,12 +63,7 @@ export class DocumentDetail implements OnInit {
   protected async openDocument(): Promise<void> {
     const doc = this.document();
     if (!doc) return;
-    const url = await this.docsRepo.urlLecture(doc.id);
-    const finalUrl = url || doc.urlPdf;
-    if (finalUrl) {
-      window.open(finalUrl, '_blank');
-      void this.docsRepo.recordDownload(doc.id);
-    }
+    void this.router.navigateByUrl('/app/' + AppRoutes.docReaderPath(doc.id));
   }
 
   protected share(): void {

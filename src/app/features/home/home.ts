@@ -67,7 +67,7 @@ export class Home implements OnInit {
   }
 
   protected openDocument(doc: DocumentModel): void {
-    void this.router.navigate(['/', AppRoutes.documentDetail.replace(':id', doc.id)]);
+    void this.router.navigateByUrl('/app/' + AppRoutes.docDetailPath(doc.id));
   }
 
   protected openBibliotheque(type?: DocumentType): void {

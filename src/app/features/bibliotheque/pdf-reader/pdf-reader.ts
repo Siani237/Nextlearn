@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@ang
 import { CommonModule } from '@angular/common';
 import { Router, ActivatedRoute } from '@angular/router';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
+import { PdfViewerModule } from 'ng2-pdf-viewer';
 import { Icon } from '../../../shared/ui/icon/icon';
 import { DocumentsRepository } from '../../../core/bibliotheque/documents-repository';
 import { AppRoutes } from '../../../core/router/app-routes';
@@ -9,7 +10,7 @@ import { AppRoutes } from '../../../core/router/app-routes';
 @Component({
   selector: 'nl-pdf-reader',
   standalone: true,
-  imports: [CommonModule, Icon],
+  imports: [CommonModule, Icon, PdfViewerModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './pdf-reader.html',
   styleUrl: './pdf-reader.scss',
@@ -22,8 +23,11 @@ export class PdfReader implements OnInit {
 
   protected readonly loading = signal(true);
   protected readonly error = signal<string | null>(null);
-  protected readonly url = signal<SafeResourceUrl | null>(null);
+  protected readonly url = signal<string | undefined>(undefined);
+  protected readonly safeUrl = signal<SafeResourceUrl | null>(null);
+  protected readonly fallback = signal(false);
   protected readonly documentId = signal<string>('');
+  private fallbackTimeout: ReturnType<typeof setTimeout> | null = null;
 
   async ngOnInit(): Promise<void> {
     const id = this.route.snapshot.paramMap.get('id') ?? '';
@@ -36,14 +40,14 @@ export class PdfReader implements OnInit {
 
     try {
       const fresh = await this.docsRepo.urlLecture(id);
-      const finalUrl = fresh || this.route.snapshot.queryParamMap.get('url');
+      const finalUrl = fresh || this.route.snapshot.queryParamMap.get('url') || undefined;
       if (finalUrl) {
-        this.url.set(this.sanitizer.bypassSecurityTrustResourceUrl(finalUrl));
+        this.setUrl(finalUrl);
         void this.docsRepo.recordView(id);
       } else {
         const doc = await this.docsRepo.getById(id);
         if (doc?.urlPdf) {
-          this.url.set(this.sanitizer.bypassSecurityTrustResourceUrl(doc.urlPdf));
+          this.setUrl(doc.urlPdf);
           void this.docsRepo.recordView(id);
         } else {
           this.error.set('Impossible d\'obtenir l\'URL du document.');
@@ -56,12 +60,38 @@ export class PdfReader implements OnInit {
     }
   }
 
+  private setUrl(url: string): void {
+    this.url.set(url);
+    this.safeUrl.set(this.sanitizer.bypassSecurityTrustResourceUrl(url));
+    this.fallbackTimeout = setTimeout(() => {
+      console.warn('[PdfReader] délai dépassé, bascule vers iframe');
+      this.fallback.set(true);
+    }, 8000);
+  }
+
   protected goBack(): void {
-    void this.router.navigate(['/', AppRoutes.documentDetail.replace(':id', this.documentId())]);
+    void this.router.navigateByUrl('/app/' + AppRoutes.docDetailPath(this.documentId()));
   }
 
   protected openInNewTab(): void {
-    const url = this.route.snapshot.queryParamMap.get('url') ?? '';
+    const url = this.url();
     if (url) window.open(url, '_blank');
+  }
+
+  protected onError(error: unknown): void {
+    console.error('[PdfReader] erreur lecteur PDF intégré', error);
+    this.clearFallbackTimeout();
+    this.fallback.set(true);
+  }
+
+  protected onLoaded(): void {
+    this.clearFallbackTimeout();
+  }
+
+  private clearFallbackTimeout(): void {
+    if (this.fallbackTimeout) {
+      clearTimeout(this.fallbackTimeout);
+      this.fallbackTimeout = null;
+    }
   }
 }

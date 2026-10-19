@@ -73,7 +73,7 @@ export class Catalogue implements OnInit {
   }
 
   protected openMatiere(id: string): void {
-    void this.router.navigate(['/', AppRoutes.matiere.replace(':id', id)]);
+    void this.router.navigateByUrl('/app/' + AppRoutes.matierePath(id));
   }
 
   protected openBibliotheque(): void {
