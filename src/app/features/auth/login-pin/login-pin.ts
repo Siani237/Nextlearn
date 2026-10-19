@@ -75,7 +75,7 @@ export class LoginPin {
   }
 
   private async soumettre(pin: string): Promise<void> {
-    const email = this.email().trim();
+    const email = this.email().trim().toLowerCase();
     if (email === '') {
       this.erreur.set('Entre ton adresse e-mail.');
       this.pin.set('');
