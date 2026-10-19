@@ -32,6 +32,7 @@ export const routes: Routes = [
         (m) => m.DesignCatalog,
       ),
   },
+  { path: 'app/', pathMatch: 'full', redirectTo: 'app' },
   {
     path: 'app',
     loadChildren: () =>

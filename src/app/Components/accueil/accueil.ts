@@ -7,6 +7,7 @@ import {
   PLATFORM_ID
 } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-accueil',
@@ -26,7 +27,8 @@ export class Accueil implements AfterViewInit, OnDestroy {
 
   constructor(
     private elementRef: ElementRef<HTMLElement>,
-    @Inject(PLATFORM_ID) platformId: Object
+    @Inject(PLATFORM_ID) platformId: Object,
+    private router: Router
   ) {
     this.isBrowser = isPlatformBrowser(platformId);
   }
@@ -102,5 +104,10 @@ export class Accueil implements AfterViewInit, OnDestroy {
     if (event.target === event.currentTarget) {
       this.closeIosAlert();
     }
+  }
+
+  /** Ouvrir la PWA depuis l'illustration téléphone. */
+  openApp(): void {
+    void this.router.navigateByUrl('/app');
   }
 }

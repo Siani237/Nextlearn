@@ -178,7 +178,11 @@
 .btn-lg { padding: 16px 32px; font-size: 1rem; }
 
 /* Phone Mockup */
-.hero-mockup { display: flex; justify-content: center; }
+.hero-mockup {
+  display: flex;
+  justify-content: center;
+  cursor: pointer;
+}
 
 .phone-mockup { perspective: 1000px; }
 
