@@ -66,6 +66,7 @@ export class Unlock {
     const ok = await this.biometrie.authenticate();
     if (!ok) return;
     this.auth.unlockWithBiometrics();
+    void this.router.navigate(['/app', AppRoutes.home]);
   }
 
   protected onChiffre(d: string): void {
@@ -84,10 +85,12 @@ export class Unlock {
 
   private async soumettre(pin: string): Promise<void> {
     const ok = await this.auth.unlockWithPin(pin);
-    if (!ok) {
-      this.erreur.set(this.auth.state().error ?? 'PIN incorrect. Réessaie.');
-      this.pin.set('');
+    if (ok) {
+      void this.router.navigate(['/app', AppRoutes.home]);
+      return;
     }
+    this.erreur.set(this.auth.state().error ?? 'PIN incorrect. Réessaie.');
+    this.pin.set('');
   }
 
   protected allerReinitialisation(): void {
